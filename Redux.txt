@@ -1,0 +1,139 @@
+				Redux Toolkit
+
+#Install:
+
+Option #1:
+npx create-react-app my-app --template redux
+-init CRA + boilerplate for Redux
+
+			
+Option #2:
+npm install @reduxjs/toolkit react-redux
+	#Consists of libraries:
+	1.redux		-	Core library, state managment
+	2.immer		-	Allows to mutate state
+	3.redux-thunk	-	Handles async actions
+	4/reselect		-	Simplifies reducer functions
+
+##Extras:
+
+redux devtools
+combine reducers
+
+##react-redux :
+npm install @reduxjs/toolkit ||react-redux||
+we need to install this part in order to connect our app to redux
+
+##Setup Store:
+Think of store as a state for your entire application.
+(similiar to context api)
+
+1.Create store.js somewhere in src folder
+2.import { configureStore } from '@reduxjs/toolkit' 
+	2.1 export const store = configureStore({reducer:{}})
+
+##Setup Provider:
+1.Navigate to index.js
+2.Import to index.js: import { store } from store folder
+3.Import to index.js: import { Provider } from 'react-redux'
+4.Wrap Provider / Nest App into Provider and provide store prop
+	
+<Provider store={store}>
+ <App/>
+</Provider> 
+
+----------------------------------------------------------------
+
+##Slice Setup
+Think of slice as a feature of your app,
+
+1.Create folder features (convention name)
+2.Create a file for your feature nameSlice.js
+--feature:Cart, file: cartSlice.js	
+3.Inside the feature file import createSlice
+  import {createSlice} from '@reduxjs/toolkit'
+4.const cartSlice = createSlice({name:'cart', initialState})
+5.setup initialState = {cartItems:[], amount:0, total:0}
+6.export cartSlice.reducer;	
+
+##Inside store.js
+
+1.import cartReducer from './features/cartSlice'
+2.make a pointer to cartReducer function inside reducer obj
+  export const store = configureStore({
+    reducer:{
+	cart: cartReducer,
+	},
+     });  	
+
+------------------------------------------------------------------
+
+##Access data from slice/state
+
+1.Import useSelector hook
+	import {useSelector} from 'react-redux'
+2.useSelector hook takes callback as a parameter
+	and inside this anonymous function we get store
+	as parameter which represents entire store state
+	useSelector((store)=>{//part of store we want})
+
+	const amount = useSelector((store)=>store.cart.amount)
+	const { amount } = useSelector(store => store.cart);
+
+##Functionality with Redux-toolkit:
+1.Inside the chosen slice we create reducer property
+  on our slice object which is object.
+2.In this reducer objecy we can define a method that will
+  have an access to state and also action as second arg.
+  We are not mutating the state because Immer library
+  does it for us in the background.
+
+const cartSlice = createSlice(
+{name:'cart',
+initialState,
+reducers:{
+clearCart:(state) => {state.items=[];}
+},},
+)
+3.We export our action
+export const { clearCart } = cartSlice.action
+4.Import useDispatch in file where we want to include
+our functionality
+5.Import reducer function we want to use
+6.Create new const dispatch and store useDispatch inside
+const dispatch = useDispatch();
+7.Use dispatch and function, we invoke dispatch with clearCart()
+onClick={(e)=>dispatch(clearCart())}
+
+###Returning state
+we can return new state from our clearCart and this new
+state will OVERWRITE/BECOME the initialState
+
+We are changing items property to be an empty array,
+however we also OMIT all the other properties. If we choose this
+approach and include only items, we will lose 
+all the other properties that exists within the state.
+(amount,total,pending...)
+
+reducers:{
+clearCart:(state) => return { items:[]}
+},
+
+###Accessing action, action.payload
+1.Create new method inside reducers obj
+reducers:{
+removeItem: (state, action) => {
+      const itemId = action.payload;
+      state.items = state.items.filter(item => item.id !== itemId);
+    },
+}
+
+2.export it
+export const { removeItem } = cartSlice.actions;
+
+3.import it along useDispatch in a file where you want to use it
+import { useDispatch } from "react-redux";
+import { removeItem } from "../features/cart/cartSlice";
+
+4.use it and pass id as param
+<button onClick={() => dispatch(removeItem(id))}>
