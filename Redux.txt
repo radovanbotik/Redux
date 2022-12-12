@@ -80,6 +80,8 @@ Think of slice as a feature of your app,
 	const amount = useSelector((store)=>store.cart.amount)
 	const { amount } = useSelector(store => store.cart);
 
+------------------------------------------------------------------
+
 ##Functionality with Redux-toolkit:
 1.Inside the chosen slice we create reducer property
   on our slice object which is object.
@@ -105,7 +107,9 @@ const dispatch = useDispatch();
 7.Use dispatch and function, we invoke dispatch with clearCart()
 onClick={(e)=>dispatch(clearCart())}
 
-###Returning state
+-----------------------------------------------------------------
+
+##Returning state
 we can return new state from our clearCart and this new
 state will OVERWRITE/BECOME the initialState
 
@@ -119,7 +123,9 @@ reducers:{
 clearCart:(state) => return { items:[]}
 },
 
-###Accessing action, action.payload
+-----------------------------------------------------------------
+
+##Accessing action, action.payload
 1.Create new method inside reducers obj
 reducers:{
 removeItem: (state, action) => {
@@ -137,3 +143,86 @@ import { removeItem } from "../features/cart/cartSlice";
 
 4.use it and pass id as param
 <button onClick={() => dispatch(removeItem(id))}>
+
+-----------------------------------------------------------------
+
+##async functionality with createAsyncThunk
+1.import createAsyncThunk in the slice where you need it.
+2.create, store and export createAsyncThunk
+export const getCartItems = createAsyncThunk() 
+
+3.createAsyncThunk requires 2 params,
+  action type and callback(fetch) function:
+
+export const getCartItems = createAsyncThunk("cart/getItems", () => {
+  return fetch(url)
+    .then(resp => resp.json())
+    .catch(err => console.log(err));
+});
+
+4.Then inside your createSlice object you define new property
+  extraReducers which is also an object and
+  we get access to lifecycle actions. so for every thunk function  
+  we create we get 3 lifecycle actions[fulfilled,pending,rejected].
+  
+  extraReducers: {
+    [getCartItems.pending]: state => {
+      state.pending = true;
+    },
+    [getCartItems.fulfilled]: (state, action) => {
+      state.pending = false;
+      state.items = action.payload;
+    },
+    [getCartItems.rejected]: state => {
+      state.pending = false;
+    },
+  },
+5.use the createAsyncThunk where you need it, we are exporting 
+  it already as const getCartItems see step n#2
+  5.1 We go to App.js and import it here
+  import { getCartItems } from "./features/cart/cartSlice";
+  5.2 We DISPATCH it inside useEffect hook
+ 
+###more options with createAsyncThunk
+1.using createAsyncThunk with axios library
+	1.1 Install axios
+	1.2 replace fetch with async/await
+	1.3 async fn can accepts params from the component from which
+	    which we had invoked it.
+	1.4 async fn also get access to thunkAPI which provides
+	    us with huge object with multeiple properties like state.
+	1.5 so for example while we are fetching we can access modal
+	    reducer and open modal etc..
+	1.6 specific response inside catch
+	    
+	    (err is coming from axios)
+	    return thunkAPI.rejectWithValue(err)
+	    
+	    and inside rejected lifecycle we can accept it as action.
+	    [getCartItems.rejected]: (state,action) => {
+      	state.pending = false;
+    	     },
+
+export const getCartItems = createAsyncThunk("cart/getItems",
+async (personId,thunkAPI) => {
+  try{
+  const resp = await axios(`url$/{personId}`)
+  thunkAPI.dispatch(openModal())
+  return resp.data
+  }
+  catch{
+  return thunkAPI.rejectWithValue('something went wrong')
+  }
+}
+
+2.Builder Callback Notation
+https://redux-toolkit.js.org/api/createReducer#usage-with-the-builder-callback-notation
+https://redux-toolkit.js.org/api/createSlice
+
+extraReducers: (builder) => {
+builder
+  .addCase(getCartItems.pending, state => {
+      state.pending = true;
+    }
+
+}
